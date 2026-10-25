@@ -1,0 +1,3 @@
+# Normalize all text files to LF in the repository so Docker builds and Linux
+# checkouts are identical regardless of the client OS.
+* text=auto eol=lf

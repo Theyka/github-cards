@@ -1,0 +1,12 @@
+# Local toolchain / build artifacts
+/github-cards.exe
+*.exe
+
+# Captured upstream sources and reference cards (research material, not shipped)
+/reference/
+
+# Local test output
+/test/
+
+# OpenChamber artifacts
+/.openchamber/

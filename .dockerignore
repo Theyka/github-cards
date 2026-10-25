@@ -1,0 +1,9 @@
+.git
+.gitignore
+reference
+test
+tools
+.openchamber
+*.exe
+*.svg
+!internal/cards/data/*.json

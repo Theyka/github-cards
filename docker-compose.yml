@@ -1,0 +1,13 @@
+services:
+  github-cards:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # Required: a GitHub token (classic PAT, fine-grained token or "gh auth token").
+      # Without it, cards render an error card.
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      # Optional: cache duration in seconds for stats/pin cards (default 21600);
+      # the streak card uses the same value, or 86400 when unset.
+      CACHE_SECONDS: ${CACHE_SECONDS:-}
