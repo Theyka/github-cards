@@ -170,4 +170,9 @@ node tools/gen_data.mjs # regenerate embedded theme/color/width data from upstre
 
 ## Credits & license
 
-MIT. Based on [github-stats-extended](https://github.com/stats-organization/github-stats-extended) (Copyright © 2020 Anurag Hazra and contributors; icons from [Octicons](https://github.com/primer/octicons), MIT) and [github-readme-streak-stats](https://github.com/DenverCoder1/github-readme-streak-stats) (Copyright © 2020 Jonah Lawrence). See [LICENSE](LICENSE).
+This project is licensed under the [GNU Affero General Public License v3.0](LICENSE) (AGPL-3.0-or-later) — the deployed service is a network service, so section 13 applies and the source is kept public here.
+
+It is a Go rewrite of two MIT-licensed projects whose code, layouts, themes and logic it derives from; their copyright and permission notices are preserved in [NOTICE](NOTICE) and apply to the derived portions independently:
+
+- [github-stats-extended](https://github.com/stats-organization/github-stats-extended) — Copyright © 2020 Anurag Hazra and contributors (icons from [Octicons](https://github.com/primer/octicons), Copyright © GitHub Inc.)
+- [github-readme-streak-stats](https://github.com/DenverCoder1/github-readme-streak-stats) — Copyright © 2020 Jonah Lawrence
