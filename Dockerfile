@@ -17,7 +17,8 @@ FROM alpine:3.20
 
 # ca-certificates: HTTPS calls to api.github.com.
 # tzdata: the streak card's timezone parameter.
-RUN apk add --no-cache ca-certificates tzdata
+# curl: Coolify's default health check command (wget is used by the Dockerfile HEALTHCHECK).
+RUN apk add --no-cache ca-certificates tzdata curl
 
 COPY --from=build /out/github-cards /usr/local/bin/github-cards
 

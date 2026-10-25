@@ -110,7 +110,7 @@ Tokens should have **no scopes** (public data only). One token is enough; more t
 1. Push this repository to GitHub (see below).
 2. In Coolify: **Project → New Resource → Public/Private Repository** (or GitHub App).
 3. Pick the repository; set **Build Pack: `Dockerfile`**.
-4. Set the **exposed port** to `3000` and health check path to `/healthz` (both already default in the Dockerfile: `EXPOSE 3000`, `HEALTHCHECK`).
+4. Set the **exposed port** to `3000` and health check path to `/healthz` (both already default in the Dockerfile: `EXPOSE 3000`, `HEALTHCHECK`; the image ships `curl` and `wget` so Coolify's own health check works too).
 5. Add environment variables in the Coolify UI:
    - `GITHUB_TOKEN=<your token>` *(required — create a token with no scopes; fine-grained tokens need "Public Repositories (read-only)")*
    - optionally `CACHE_SECONDS=21600`
