@@ -142,13 +142,13 @@ func (c *Client) graphqlOnce(ctx context.Context, query string, variables map[st
 
 	resp, err := c.http.Do(req)
 	if err != nil {
-		return nil, false, &Error{Message: "Failed to reach the GitHub API: " + err.Error(), Kind: KindGraphQL}
+		return nil, false, &Error{Message: "Failed to reach the GitHub API: " + err.Error(), Kind: KindGraphQL, Err: err}
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseSize))
 	if err != nil {
-		return nil, false, &Error{Message: "Failed to read the GitHub API response.", Kind: KindGraphQL}
+		return nil, false, &Error{Message: "Failed to read the GitHub API response.", Kind: KindGraphQL, Err: err}
 	}
 
 	var envelope graphqlEnvelope
@@ -229,13 +229,13 @@ func (c *Client) restTotalItems(ctx context.Context, searchType, qualifier strin
 
 	resp, err := c.http.Do(req)
 	if err != nil {
-		return 0, &Error{Message: "Failed to reach the GitHub REST API: " + err.Error(), Kind: KindRestAPI}
+		return 0, &Error{Message: "Failed to reach the GitHub REST API: " + err.Error(), Kind: KindRestAPI, Err: err}
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseSize))
 	if err != nil {
-		return 0, &Error{Message: "Failed to read the GitHub REST API response.", Kind: KindRestAPI}
+		return 0, &Error{Message: "Failed to read the GitHub REST API response.", Kind: KindRestAPI, Err: err}
 	}
 
 	var payload struct {

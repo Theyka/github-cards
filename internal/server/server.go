@@ -3,6 +3,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -20,6 +21,15 @@ const (
 	defaultStatsTTL  = 6 * time.Hour
 	defaultStreakTTL = 24 * time.Hour
 	maxErrorTTL      = 15 * time.Minute
+
+	// transientErrorTTL caches failures reaching GitHub (connection refused,
+	// TLS, resets, HTTP 5xx) only briefly so a short outage recovers fast.
+	transientErrorTTL = 2 * time.Minute
+
+	// upstreamFetchTimeout bounds a GitHub lookup after it has been detached
+	// from the incoming request. The GitHub client's own timeout is 20s, so
+	// this covers one stalled connection plus a retry.
+	upstreamFetchTimeout = 30 * time.Second
 )
 
 // Server serves the stats, pin and streak cards.
@@ -73,6 +83,10 @@ func writeSVG(w http.ResponseWriter, svg string, ttl time.Duration) {
 		w.Header().Set("Cache-Control", "public, max-age="+strconv.Itoa(int(ttl.Seconds())))
 		w.Header().Set("Expires", time.Now().Add(ttl).UTC().Format(http.TimeFormat))
 		w.Header().Set("Last-Modified", time.Now().UTC().Format(http.TimeFormat))
+	} else {
+		// Uncached results (transient failures, CACHE_SECONDS=0) must not be
+		// stored by browsers or GitHub's camo proxy either.
+		w.Header().Set("Cache-Control", "no-cache, no-store, max-age=0")
 	}
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(svg))
@@ -118,6 +132,42 @@ func errorTTLFor(ttl time.Duration) time.Duration {
 		return maxErrorTTL
 	}
 	return ttl
+}
+
+// errorTTL decides how long an error card may be reused.
+//
+//   - A canceled or timed-out lookup is never cached: the client that gave up
+//     is gone, and the next reader deserves a fresh attempt instead of a
+//     cached "context canceled" card.
+//   - Failures reaching GitHub itself (DNS, connection refused, resets, TLS)
+//     are cached only briefly, so a short GitHub outage cannot pin an error
+//     card for the full error TTL.
+//   - Everything else (missing user, invalid token, rate limit) keeps the
+//     regular error TTL.
+func errorTTL(err error, ttl time.Duration) time.Duration {
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return 0
+	}
+	var ghErr *github.Error
+	if errors.As(err, &ghErr) && ghErr.Err != nil {
+		if ttl <= 0 {
+			return 0
+		}
+		if ttl > transientErrorTTL {
+			return transientErrorTTL
+		}
+		return ttl
+	}
+	return errorTTLFor(ttl)
+}
+
+// fetchContext detaches a GitHub lookup from the incoming request's lifetime.
+// A browser reload or a camo timeout cancels the connection, but the lookup
+// keeps running: aborting it mid-flight used to record "context canceled" as
+// the card for that URL, and the result is still useful for the next reader.
+// The deadline keeps a stalled GitHub connection bounded.
+func fetchContext(r *http.Request) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.WithoutCancel(r.Context()), upstreamFetchTimeout)
 }
 
 func buildErrorCard(err error, colors cards.ColorInput) []byte {
@@ -226,18 +276,20 @@ func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	key := "/api?" + r.URL.RawQuery
-	svg := s.cache.GetOrCompute(key, func() ([]byte, time.Duration) {
-		stats, err := s.client.FetchStats(r.Context(), params)
+	svg, ttl := s.cache.GetOrCompute(key, func() ([]byte, time.Duration) {
+		ctx, cancel := fetchContext(r)
+		defer cancel()
+		stats, err := s.client.FetchStats(ctx, params)
 		if err != nil {
-			return buildErrorCard(err, colorOptions), errorTTLFor(s.statsTTL)
+			return buildErrorCard(err, colorOptions), errorTTL(err, s.statsTTL)
 		}
 		rendered, err := cards.RenderStatsCard(stats, options)
 		if err != nil {
-			return buildErrorCard(err, colorOptions), errorTTLFor(s.statsTTL)
+			return buildErrorCard(err, colorOptions), errorTTL(err, s.statsTTL)
 		}
 		return []byte(rendered), s.statsTTL
 	})
-	writeSVG(w, string(svg), s.statsTTL)
+	writeSVG(w, string(svg), ttl)
 }
 
 func (s *Server) handlePin(w http.ResponseWriter, r *http.Request) {
@@ -282,18 +334,20 @@ func (s *Server) handlePin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	key := "/api/pin?" + r.URL.RawQuery
-	svg := s.cache.GetOrCompute(key, func() ([]byte, time.Duration) {
-		repo, err := s.client.FetchRepo(r.Context(), username, reponame)
+	svg, ttl := s.cache.GetOrCompute(key, func() ([]byte, time.Duration) {
+		ctx, cancel := fetchContext(r)
+		defer cancel()
+		repo, err := s.client.FetchRepo(ctx, username, reponame)
 		if err != nil {
-			return buildErrorCard(err, colorOptions), errorTTLFor(s.statsTTL)
+			return buildErrorCard(err, colorOptions), errorTTL(err, s.statsTTL)
 		}
 		rendered, err := cards.RenderRepoCard(repo, options)
 		if err != nil {
-			return buildErrorCard(err, colorOptions), errorTTLFor(s.statsTTL)
+			return buildErrorCard(err, colorOptions), errorTTL(err, s.statsTTL)
 		}
 		return []byte(rendered), s.statsTTL
 	})
-	writeSVG(w, string(svg), s.statsTTL)
+	writeSVG(w, string(svg), ttl)
 }
 
 func (s *Server) handleStreak(w http.ResponseWriter, r *http.Request) {
@@ -309,11 +363,13 @@ func (s *Server) handleStreak(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if q.Get("type") == "json" {
-		payload := s.cache.GetOrCompute("/streak/json?"+r.URL.RawQuery, func() ([]byte, time.Duration) {
-			stats, err := s.client.FetchStreak(r.Context(), params)
+		payload, ttl := s.cache.GetOrCompute("/streak/json?"+r.URL.RawQuery, func() ([]byte, time.Duration) {
+			ctx, cancel := fetchContext(r)
+			defer cancel()
+			stats, err := s.client.FetchStreak(ctx, params)
 			if err != nil {
 				body, _ := json.Marshal(map[string]any{"error": errorMessage(err), "code": 400})
-				return body, errorTTLFor(s.streakTTL)
+				return body, errorTTL(err, s.streakTTL)
 			}
 			body, err := json.Marshal(stats)
 			if err != nil {
@@ -322,9 +378,11 @@ func (s *Server) handleStreak(w http.ResponseWriter, r *http.Request) {
 			return body, s.streakTTL
 		})
 		w.Header().Set("Content-Type", "application/json")
-		if s.streakTTL > 0 {
-			w.Header().Set("Cache-Control", "public, max-age="+strconv.Itoa(int(s.streakTTL.Seconds())))
-			w.Header().Set("Expires", time.Now().Add(s.streakTTL).UTC().Format(http.TimeFormat))
+		if ttl > 0 {
+			w.Header().Set("Cache-Control", "public, max-age="+strconv.Itoa(int(ttl.Seconds())))
+			w.Header().Set("Expires", time.Now().Add(ttl).UTC().Format(http.TimeFormat))
+		} else {
+			w.Header().Set("Cache-Control", "no-cache, no-store, max-age=0")
 		}
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write(payload)
@@ -337,14 +395,16 @@ func (s *Server) handleStreak(w http.ResponseWriter, r *http.Request) {
 	}
 
 	key := "/streak?" + r.URL.RawQuery
-	svg := s.cache.GetOrCompute(key, func() ([]byte, time.Duration) {
-		stats, err := s.client.FetchStreak(r.Context(), params)
+	svg, ttl := s.cache.GetOrCompute(key, func() ([]byte, time.Duration) {
+		ctx, cancel := fetchContext(r)
+		defer cancel()
+		stats, err := s.client.FetchStreak(ctx, params)
 		if err != nil {
-			return []byte(cards.RenderStreakErrorCard(errorMessage(err), options)), errorTTLFor(s.streakTTL)
+			return []byte(cards.RenderStreakErrorCard(errorMessage(err), options)), errorTTL(err, s.streakTTL)
 		}
 		return []byte(cards.RenderStreakCard(stats, options)), s.streakTTL
 	})
-	writeSVG(w, string(svg), s.streakTTL)
+	writeSVG(w, string(svg), ttl)
 }
 
 var streakColorProps = []string{

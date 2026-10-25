@@ -165,10 +165,11 @@ Ported with high fidelity, but intentionally not implemented:
 - **`type=png`** — returns SVG (GitHub's camo cache handles SVG fine).
 - **Custom streak labels** (`card_labels`), RTL layout, `date_format`, other niche params.
 
-Two deliberate improvements over upstream:
+Three deliberate improvements over upstream:
 
 - A missing/invalid token renders a styled error card instead of crashing; the service never exits because of API errors.
 - Tokens are not dropped from the pool on rate limits (upstream removes them permanently); they are retried and kept.
+- Transient failures never pin a card: GitHub lookups are detached from the incoming request (a browser reload or a camo timeout can no longer leave `context canceled` cached as your card), canceled or timed-out lookups are never cached, failures reaching GitHub are cached for only 2 minutes, and uncached error cards are sent with `no-store`.
 
 ## Development
 

@@ -9,9 +9,18 @@ type Error struct {
 	Message   string
 	Kind      string
 	Secondary string
+
+	// Err is the underlying transport error, when there is one. It lets the
+	// server tell transient network failures (and cancellations) apart from
+	// deterministic responses such as a missing user, without parsing text.
+	Err error
 }
 
 func (e *Error) Error() string { return e.Message }
+
+// Unwrap exposes the underlying error to errors.Is / errors.As so callers can
+// detect context.Canceled and context.DeadlineExceeded.
+func (e *Error) Unwrap() error { return e.Err }
 
 // Error kinds, mirroring github-stats-extended common/error.ts.
 const (

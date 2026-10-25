@@ -26,14 +26,21 @@ func NewCache() *Cache {
 	}
 }
 
-// GetOrCompute returns the cached value for key, or computes it with fn.
-// fn returns the data plus the TTL it should be cached with (0 = no caching).
-func (c *Cache) GetOrCompute(key string, fn func() ([]byte, time.Duration)) []byte {
+// GetOrCompute returns the cached value for key plus the TTL that value was
+// cached with, or computes it with fn. fn returns the data plus the TTL it
+// should be cached with (0 = no caching, and the result is reported as 0 so
+// the HTTP layer can mark it uncacheable too).
+//
+// An entry with less than a second of life is treated as expired so callers
+// never serve a card with a meaningless remaining TTL.
+func (c *Cache) GetOrCompute(key string, fn func() ([]byte, time.Duration)) ([]byte, time.Duration) {
 	for {
 		c.mu.Lock()
-		if entry, ok := c.entries[key]; ok && time.Now().Before(entry.expires) {
-			c.mu.Unlock()
-			return entry.data
+		if entry, ok := c.entries[key]; ok {
+			if remaining := time.Until(entry.expires); remaining > time.Second {
+				c.mu.Unlock()
+				return entry.data, remaining
+			}
 		}
 		if ch, ok := c.inflight[key]; ok {
 			c.mu.Unlock()
@@ -59,6 +66,6 @@ func (c *Cache) GetOrCompute(key string, fn func() ([]byte, time.Duration)) []by
 		delete(c.inflight, key)
 		close(ch)
 		c.mu.Unlock()
-		return data
+		return data, ttl
 	}
 }
