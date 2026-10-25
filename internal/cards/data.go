@@ -7,6 +7,7 @@ package cards
 import (
 	_ "embed"
 	"encoding/json"
+	"maps"
 )
 
 //go:embed data/themes_ghstats.json
@@ -65,4 +66,20 @@ func mustUnmarshal(data []byte, v any) {
 func IsThemeName(name string) bool {
 	_, ok := themesGhstats[name]
 	return ok
+}
+
+// ThemeCatalog returns independent copies of the palettes available to the
+// browser builder. Stats and pin cards use the same theme collection.
+func ThemeCatalog() map[string]map[string]map[string]string {
+	copyThemes := func(source map[string]map[string]string) map[string]map[string]string {
+		out := make(map[string]map[string]string, len(source))
+		for name, colors := range source {
+			out[name] = maps.Clone(colors)
+		}
+		return out
+	}
+	return map[string]map[string]map[string]string{
+		"stats":  copyThemes(themesGhstats),
+		"streak": copyThemes(themesStreak),
+	}
 }

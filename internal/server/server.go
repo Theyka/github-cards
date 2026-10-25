@@ -52,6 +52,8 @@ func New(client *github.Client) *Server {
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", s.handleRoot)
+	mux.HandleFunc("GET /assets/{file}", serveBuilderAsset)
+	mux.HandleFunc("GET /builder/themes", serveBuilderThemes)
 	mux.HandleFunc("GET /healthz", s.handleHealth)
 	mux.HandleFunc("GET /favicon.ico", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
@@ -137,9 +139,9 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/api?"+r.URL.RawQuery, http.StatusFound)
 		return
 	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(landingPage))
+	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob:; connect-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'")
+	w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+	serveBuilderFile(w, r, "index.html", "text/html; charset=utf-8")
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
@@ -376,36 +378,3 @@ func streakOptionsFromQuery(q url.Values) cards.StreakCardOptions {
 		DisableAnimations:      q.Get("disable_animations") == "true",
 	}
 }
-
-const landingPage = `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>github-cards</title>
-<style>
-  body { font-family: -apple-system, 'Segoe UI', Ubuntu, sans-serif; margin: 3rem auto; max-width: 46rem; padding: 0 1rem; color: #24292f; }
-  code { background: #f6f8fa; padding: 0.15em 0.35em; border-radius: 4px; }
-  pre { background: #f6f8fa; padding: 0.75rem 1rem; border-radius: 6px; overflow-x: auto; }
-  h1 { margin-bottom: 0.25rem; }
-  .sub { color: #57606a; margin-top: 0; }
-</style>
-</head>
-<body>
-<h1>github-cards</h1>
-<p class="sub">A self-hosted Go service that renders GitHub stats, repository pin and contribution streak cards as SVGs for README files. Port of <a href="https://github.com/stats-organization/github-stats-extended">github-stats-extended</a> and <a href="https://github.com/DenverCoder1/github-readme-streak-stats">github-readme-streak-stats</a> (both MIT).</p>
-
-<h2>Endpoints</h2>
-<pre>/api?username=USERNAME&amp;theme=radical
-/api/pin?username=OWNER&amp;repo=REPO&amp;theme=radical
-/streak?user=USERNAME&amp;theme=radical</pre>
-
-<h2>Examples</h2>
-<pre>&lt;img src="http://YOUR-HOST/api?username=Theyka&amp;show_icons=true&amp;theme=radical"&gt;
-&lt;img src="http://YOUR-HOST/api/pin?username=Theyka&amp;repo=Turnstile-Solver&amp;theme=radical"&gt;
-&lt;img src="http://YOUR-HOST/streak?user=Theyka&amp;theme=radical"&gt;</pre>
-
-<p>Set <code>GITHUB_TOKEN</code> (or <code>PAT_1</code> / <code>TOKEN</code>) in the environment. Optional: <code>CACHE_SECONDS</code>, <code>PORT</code>.</p>
-</body>
-</html>
-`

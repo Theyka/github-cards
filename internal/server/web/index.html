@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Make your GitHub profile your own. Design stats, repository, and streak cards, preview them live, and copy ready-to-paste README embeds.">
+  <meta name="color-scheme" content="light">
+  <title>github-cards — Your GitHub. Your style.</title>
+  <link rel="stylesheet" href="/assets/builder.css">
+  <script type="module" src="/assets/builder.mjs"></script>
+</head>
+<body>
+  <a class="skip-link" href="#builder">Skip to card builder</a>
+  <header class="site-header page-width">
+    <a class="wordmark" href="/" aria-label="github-cards home">
+      <svg class="brand-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true"><rect x="2" y="2" width="12" height="12" rx="3" fill="currentColor"/><rect x="18" y="2" width="12" height="12" rx="3" fill="currentColor" opacity=".35"/><rect x="2" y="18" width="12" height="12" rx="3" fill="currentColor" opacity=".35"/><rect x="18" y="18" width="12" height="12" rx="3" fill="currentColor"/></svg>
+      github<span class="wordmark-divider">/</span>cards
+    </a>
+    <a class="source-link" href="https://github.com/Theyka/github-cards" target="_blank" rel="noopener noreferrer">View source <span aria-hidden="true">↗</span></a>
+  </header>
+
+  <main class="page-width">
+    <section class="hero" aria-labelledby="hero-title">
+      <div>
+        <p class="eyebrow"><span class="status-dot" aria-hidden="true"></span> A little more personality for your README</p>
+        <h1 id="hero-title">Your GitHub.<br><em>Your style.</em></h1>
+        <p class="hero-description">Good work deserves a good introduction. Turn your GitHub activity into cards that feel like you.</p>
+      </div>
+      <ol class="how-it-works" aria-label="How it works">
+        <li><span class="step-number">01</span><div><strong>Pick your card</strong><span>Stats, a favorite repo, or your streak.</span></div></li>
+        <li><span class="step-number">02</span><div><strong>Make it yours</strong><span>A theme, a few tweaks, a live preview.</span></div></li>
+        <li><span class="step-number">03</span><div><strong>Drop it in your README</strong><span>Copy the URL or ready-to-paste HTML.</span></div></li>
+      </ol>
+    </section>
+
+    <noscript><p class="notice">Enable JavaScript to use the card designer. The image API still works without it: <code>/api?username=Theyka&amp;theme=radical</code>. <a href="https://github.com/Theyka/github-cards#endpoints">View endpoint documentation</a>.</p></noscript>
+    <p id="catalog-notice" class="notice" role="status" hidden></p>
+
+    <section id="builder" class="studio" aria-labelledby="builder-heading">
+      <div class="studio-header">
+        <div><p class="eyebrow">The card studio</p><h2 id="builder-heading">Make something worth showing.</h2></div>
+        <span class="small-tag">SVG · README-ready</span>
+      </div>
+
+      <form id="builder-form">
+        <fieldset class="card-types">
+          <legend class="sr-only">Card type</legend>
+          <label class="card-type"><input type="radio" name="type" value="stats" checked><span class="type-icon" aria-hidden="true">▥</span><span><strong>GitHub stats</strong><small>Your work, at a glance</small></span></label>
+          <label class="card-type"><input type="radio" name="type" value="pin"><span class="type-icon" aria-hidden="true">⌘</span><span><strong>Repository pin</strong><small>Put a project in the spotlight</small></span></label>
+          <label class="card-type"><input type="radio" name="type" value="streak"><span class="type-icon" aria-hidden="true">ϟ</span><span><strong>Contribution streak</strong><small>Keep the momentum going</small></span></label>
+        </fieldset>
+
+        <div class="studio-grid">
+          <div class="controls">
+            <section class="control-section" aria-labelledby="identity-heading">
+              <h3 id="identity-heading"><span class="section-number">01</span> The essentials</h3>
+              <label class="field" for="username"><span id="username-label">GitHub username</span><span class="input-prefix"><span aria-hidden="true">@</span><input id="username" name="username" value="Theyka" placeholder="Your GitHub username" maxlength="39" autocomplete="off" spellcheck="false" required></span></label>
+              <label class="field" id="repo-field" for="repo" hidden>Repository name<input id="repo" name="repo" value="Turnstile-Solver" placeholder="my-awesome-project" maxlength="100" autocomplete="off" spellcheck="false" disabled></label>
+              <p class="field-help">Public GitHub data. No sign-in or personal token needed.</p>
+            </section>
+
+            <section class="control-section" aria-labelledby="theme-heading">
+              <h3 id="theme-heading"><span class="section-number">02</span> Set the mood</h3>
+              <label class="field" for="theme"><span class="label-with-meta">Theme <small id="theme-count">Loading palettes…</small></span><select id="theme" name="theme"><option value="radical">radical</option><option value="default">default</option></select></label>
+              <div id="theme-shortcuts" class="theme-shortcuts" aria-label="Quick theme presets"></div>
+            </section>
+
+            <details class="option-group">
+              <summary><span><span class="section-number">03</span> Layout &amp; details</span><span class="summary-icon" aria-hidden="true">+</span></summary>
+              <div class="option-content">
+                <div class="field-grid">
+                  <label class="field" for="embed-width">Embed width <span class="unit-hint">px</span><input id="embed-width" name="embed_width" type="number" min="200" max="1200" step="1" value="400" required></label>
+                  <label class="field" for="border-radius">Corner radius <span class="unit-hint">px</span><input id="border-radius" name="border_radius" type="number" min="0" max="100" step="0.5" value="4.5" required></label>
+                </div>
+                <label class="check"><input type="checkbox" name="hide_border"> Hide card border</label>
+                <label class="check"><input type="checkbox" name="disable_animations" checked> Disable animations</label>
+
+                <fieldset data-for="stats">
+                  <legend class="sr-only">Stats card options</legend>
+                  <label class="field" for="custom-title">Custom title <span class="optional">optional</span><input id="custom-title" name="custom_title" maxlength="100" placeholder="Your name's GitHub Stats"></label>
+                  <label class="field" for="rank-icon">Rank display<select id="rank-icon" name="rank_icon"><option value="default">Letter grade</option><option value="percentile">Percentile</option><option value="github">GitHub icon</option></select></label>
+                  <label class="field" for="number-format">Number format<select id="number-format" name="number_format"><option value="short">Compact · 1.2k</option><option value="long">Full · 1200</option></select></label>
+                  <label class="check"><input type="checkbox" name="show_icons" checked> Show stat icons</label>
+                  <label class="check"><input type="checkbox" name="text_bold" checked> Bold stat text</label>
+                  <label class="check"><input type="checkbox" name="hide_title"> Hide title</label>
+                  <label class="check"><input type="checkbox" name="hide_rank"> Hide rank circle</label>
+                  <fieldset class="stat-choices"><legend>Stats to display</legend>
+                    <label class="check"><input type="checkbox" name="visible_stat" value="stars" checked> Stars</label>
+                    <label class="check"><input type="checkbox" name="visible_stat" value="commits" checked> Commits</label>
+                    <label class="check"><input type="checkbox" name="visible_stat" value="prs" checked> Pull requests</label>
+                    <label class="check"><input type="checkbox" name="visible_stat" value="issues" checked> Issues</label>
+                    <label class="check"><input type="checkbox" name="visible_stat" value="contribs" checked> Contributed to</label>
+                  </fieldset>
+                </fieldset>
+
+                <fieldset data-for="pin" hidden disabled>
+                  <legend class="sr-only">Repository card options</legend>
+                  <label class="check"><input type="checkbox" name="show_owner" checked> Show owner / repository</label>
+                  <label class="field" for="description-lines">Description lines<select id="description-lines" name="description_lines_count"><option value="">Automatic</option><option value="1">1 line</option><option value="2">2 lines</option><option value="3">3 lines</option></select></label>
+                </fieldset>
+
+                <fieldset data-for="streak" hidden disabled>
+                  <legend class="sr-only">Streak card options</legend>
+                  <label class="field" for="streak-mode">Streak mode<select id="streak-mode" name="mode"><option value="daily">Daily streak</option><option value="weekly">Weekly streak</option></select></label>
+                  <label class="check"><input type="checkbox" name="short_numbers"> Compact numbers</label>
+                  <label class="check"><input type="checkbox" name="hide_total_contributions"> Hide total contributions</label>
+                  <label class="check"><input type="checkbox" name="hide_current_streak"> Hide current streak</label>
+                  <label class="check"><input type="checkbox" name="hide_longest_streak"> Hide longest streak</label>
+                </fieldset>
+              </div>
+            </details>
+
+            <details class="option-group">
+              <summary><span><span class="section-number">04</span> Custom colors</span><span class="summary-icon" aria-hidden="true">+</span></summary>
+              <div class="option-content">
+                <p class="field-help">Override any theme color. Leave a field empty to use its theme default. Hex values work with or without #.</p>
+                <div id="color-fields" class="color-fields"></div>
+                <p class="field-help">Background gradients: <code>90,141321,302b63</code>. For transparency, use <code>00000000</code>.</p>
+                <button id="reset-colors" class="text-button" type="button">Reset to theme colors ↺</button>
+              </div>
+            </details>
+
+            <details class="option-group">
+              <summary><span><span class="section-number">05</span> Advanced options</span><span class="summary-icon" aria-hidden="true">+</span></summary>
+              <div class="option-content">
+                <label class="field" for="card-width">SVG width <span class="optional">optional</span><input id="card-width" name="card_width" type="number" min="100" max="1200" step="1" placeholder="467"></label>
+                <p class="field-help">SVG width changes the card itself. Embed width only changes its display size in your README.</p>
+                <fieldset data-for="stats">
+                  <legend class="sr-only">Advanced stats options</legend>
+                  <label class="field" for="commits-year">Commits year <span class="optional">optional</span><input id="commits-year" name="commits_year" placeholder="e.g. 2026" inputmode="numeric" maxlength="4"></label>
+                  <label class="check"><input type="checkbox" name="include_all_commits"> Count all-time commits</label>
+                  <label class="check"><input type="checkbox" name="contribs_include_own_repos"> Include own repos in contributions</label>
+                  <label class="field" for="exclude-repo">Exclude repos from stars <span class="optional">optional</span><input id="exclude-repo" name="exclude_repo" placeholder="repo-one,repo-two" maxlength="500"></label>
+                </fieldset>
+                <fieldset data-for="streak" hidden disabled>
+                  <legend class="sr-only">Advanced streak options</legend>
+                  <label class="field" for="timezone">Timezone <span class="optional">optional</span><input id="timezone" name="timezone" placeholder="UTC or Europe/Paris" maxlength="100"></label>
+                  <label class="field" for="starting-year">Starting year <span class="optional">optional</span><input id="starting-year" name="starting_year" type="number" min="2005" max="9999" step="1" placeholder="Account creation year"></label>
+                  <label class="field" for="exclude-days">Excluded days <span class="optional">daily mode</span><input id="exclude-days" name="exclude_days" placeholder="Sat,Sun" maxlength="100"></label>
+                  <p class="field-help">Excluded days keep an existing daily streak alive without a contribution.</p>
+                </fieldset>
+              </div>
+            </details>
+
+            <div class="control-actions">
+              <button class="button button-primary" type="submit">Update preview <span aria-hidden="true">↗</span></button>
+              <button id="reset-design" class="text-button" type="button">Reset this card</button>
+              <p id="validation-message" class="validation-message" role="status" hidden></p>
+            </div>
+          </div>
+
+          <div class="workspace" id="workspace">
+            <section class="preview-panel" aria-labelledby="preview-heading">
+              <div class="panel-heading"><h3 id="preview-heading"><span class="status-dot" aria-hidden="true"></span> Live preview</h3><label class="check auto-preview"><input id="auto-preview" type="checkbox" checked> Auto-update</label></div>
+              <div id="preview-stage" class="preview-stage" data-background="light" aria-busy="false">
+                <div id="preview-placeholder" class="preview-placeholder"><span class="placeholder-mark" aria-hidden="true">⌘</span><strong>Your next README upgrade.</strong><span>Your card will appear here.</span></div>
+                <img id="card-preview" alt="GitHub card preview" hidden>
+              </div>
+              <div class="preview-footer"><p id="preview-status" role="status">Preparing your card…</p><div class="background-picker" role="group" aria-label="Preview background"><button type="button" class="background-choice" data-background="light" aria-label="Light preview background" aria-pressed="true">◯</button><button type="button" class="background-choice" data-background="dark" aria-label="Dark preview background" aria-pressed="false">●</button><button type="button" class="background-choice" data-background="grid" aria-label="Checkerboard preview background" aria-pressed="false">▦</button></div></div>
+            </section>
+
+            <section class="output-panel" aria-labelledby="output-heading">
+              <div class="panel-heading"><div><p class="eyebrow">Ready when you are</p><h3 id="output-heading">One copy. All yours.</h3></div><a id="open-card" class="text-link" href="/api?username=Theyka&amp;theme=radical" target="_blank" rel="noopener noreferrer">Open SVG ↗</a></div>
+              <div class="output-tabs" role="tablist" aria-label="Output format"><button id="tab-url" role="tab" type="button" data-format="url" aria-selected="true" aria-controls="output-code" tabindex="0">Image URL</button><button id="tab-html" role="tab" type="button" data-format="html" aria-selected="false" aria-controls="output-code" tabindex="-1">HTML</button><button id="tab-markdown" role="tab" type="button" data-format="markdown" aria-selected="false" aria-controls="output-code" tabindex="-1">Markdown</button></div>
+              <pre id="output-code" role="tabpanel" aria-labelledby="tab-url" tabindex="0"><code id="output-value">Loading the builder…</code></pre>
+              <div class="output-actions"><button id="copy-output" class="button button-primary" type="button" disabled>Copy image URL <span aria-hidden="true">⧉</span></button><button id="share-design" class="button button-secondary" type="button" disabled>Share design ↗</button></div>
+              <p id="copy-status" class="copy-status" role="status"></p>
+              <p class="embed-tip"><span aria-hidden="true">↳</span> Mobile-friendly by default. The HTML centers your card without a table, so it can scale to fit.</p>
+            </section>
+
+            <aside class="studio-note"><span aria-hidden="true">✳</span><p>Not a screenshot. A living card.<br><span>Images refresh from GitHub automatically. No need to update your README.</span></p></aside>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <footer class="site-footer"><p>Small details. A more personal profile.</p><p><a href="https://github.com/Theyka/github-cards">Source · AGPL-3.0</a><span aria-hidden="true"> / </span><a href="https://github.com/Theyka/github-cards#endpoints">API docs</a></p><p class="credits">Built on the work of <a href="https://github.com/stats-organization/github-stats-extended">github-stats-extended</a> &amp; <a href="https://github.com/DenverCoder1/github-readme-streak-stats">streak-stats</a>. Upstream MIT notices preserved.</p></footer>
+  </main>
+</body>
+</html>

@@ -11,11 +11,25 @@ The SVG layouts, themes, icons, formulas and GraphQL queries are derived from th
 
 No Vercel, no serverless, no build tooling: one static binary, one Dockerfile, ready for [Coolify](https://coolify.io).
 
+## Design cards in your browser
+
+Open the service's home page (for example, [githubstats.theyka.net](https://githubstats.theyka.net/)) to use the **card studio**. It works on phones, tablets, and desktops:
+
+- Enter a GitHub username (and a repository for pin cards).
+- Choose stats, repository pin, or contribution streak cards.
+- Browse the actual renderer theme collections, override colors with pickers or hex/gradient inputs, and adjust card-specific layout and data options.
+- Preview the real SVG with debounced auto-updates, or switch auto-update off and use **Update preview**. Light, dark, and checkerboard backgrounds help check transparent themes.
+- Copy the image URL, a responsive, table-free HTML embed, or Markdown. URLs automatically use the host you're visiting, so self-hosted installations work without configuration.
+- **Share design** copies a link that restores your settings. Designs live in the URL fragment, not a database, and never include a GitHub token.
+
+The UI, CSS, and JavaScript are embedded in the Go binary. No npm install, frontend build, third-party CDN, or browser-side token is required. The server still needs its configured `GITHUB_TOKEN` to fetch live card data; API failures appear in the preview as error cards.
+
 ## Endpoints
 
 | Path | Card | Example |
 | --- | --- | --- |
-| `GET /` | Landing page (redirects to a card when `?user=` or `?username=` is present) | `/` |
+| `GET /` | Responsive card builder (legacy `?user=` and `?username=` image redirects are preserved) | `/` |
+| `GET /builder/themes` | Theme names and palettes used by the builder | `/builder/themes` |
 | `GET /api` | GitHub stats card | `/api?username=Theyka&show_icons=true&theme=radical` |
 | `GET /api/pin` (or `/api/pin/`) | Repository pin card | `/api/pin?username=Theyka&repo=Turnstile-Solver&theme=radical` |
 | `GET /streak` (or `/streak/`) | Contribution streak card (SVG, or `type=json`) | `/streak?user=Theyka&theme=radical` |
@@ -161,6 +175,8 @@ Two deliberate improvements over upstream:
 ```sh
 go build ./...          # build
 go vet ./...            # static checks
+go test ./...           # Go route, asset, and theme tests
+node --test tools/tests/*.test.mjs # builder URL / HTML / validation tests (Node 20+)
 go run .                # run locally on :3000 (needs GITHUB_TOKEN)
 
 node tools/gen_data.mjs # regenerate embedded theme/color/width data from upstream sources
